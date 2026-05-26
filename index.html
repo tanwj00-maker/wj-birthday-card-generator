@@ -49,15 +49,22 @@
       padding: 24px 16px;
     }
 
-    /* ⭐ STARS */
-    .star {
+    /* ⭐ STARS — all inside #star-layer which sits BELOW everything */
+    #star-layer {
       position: fixed;
+      inset: 0;
+      z-index: -1;          /* behind all content */
+      pointer-events: none; /* never intercepts taps */
+      overflow: hidden;
+    }
+
+    .star {
+      position: absolute;   /* absolute inside the fixed layer */
       background: white;
       border-radius: 50%;
       opacity: 0.8;
       animation: floatStar 6s infinite ease-in-out;
       pointer-events: none;
-      z-index: 0;
     }
 
     @keyframes floatStar {
@@ -67,7 +74,7 @@
     }
 
     .shooting-star {
-      position: fixed;
+      position: absolute;   /* absolute inside the fixed layer */
       width: 160px;
       height: 4px;
       background: linear-gradient(90deg, white, transparent);
@@ -75,7 +82,6 @@
       transform: rotate(-45deg);
       animation: shoot 7s linear infinite;
       pointer-events: none;
-      z-index: 0;
     }
 
     @keyframes shoot {
@@ -205,6 +211,8 @@
       transition: transform 0.15s, box-shadow 0.15s;
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
+      position: relative;   /* creates its own stacking context */
+      z-index: 100;         /* always above star layer */
     }
 
     .btn:active {
@@ -380,32 +388,37 @@
 
 <body>
 
+<!-- Star layer sits BELOW everything; pointer-events:none on the wrapper -->
+<div id="star-layer" aria-hidden="true"></div>
+
 <script>
   function createStars(count) {
     count = count || 60;
+    var layer = document.getElementById("star-layer");
     for (var i = 0; i < count; i++) {
       var star = document.createElement("div");
       star.className = "star";
       var size = (3 + Math.random() * 5) + "px";
       star.style.width = size;
       star.style.height = size;
-      star.style.left = (Math.random() * 100) + "vw";
-      star.style.top = (Math.random() * 100) + "vh";
+      star.style.left = (Math.random() * 100) + "%";
+      star.style.top = (Math.random() * 100) + "%";
       star.style.animationDuration = (3 + Math.random() * 6) + "s";
       star.style.animationDelay = (Math.random() * 5) + "s";
-      document.body.appendChild(star);
+      layer.appendChild(star);
     }
   }
 
   function createShootingStars(count) {
     count = count || 6;
+    var layer = document.getElementById("star-layer");
     for (var i = 0; i < count; i++) {
       var s = document.createElement("div");
       s.className = "shooting-star";
-      s.style.left = (60 + Math.random() * 40) + "vw";
-      s.style.top = (Math.random() * 40) + "vh";
+      s.style.left = (60 + Math.random() * 40) + "%";
+      s.style.top = (Math.random() * 40) + "%";
       s.style.animationDelay = (Math.random() * 10) + "s";
-      document.body.appendChild(s);
+      layer.appendChild(s);
     }
   }
 
@@ -462,7 +475,10 @@
       <div class="history-panel">
         <div class="history-header">
           <h2>🕰 Previous Birthday Cards</h2>
-          <span class="saved-badge" id="savedCount">0 saved</span>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button onclick="clearHistory()" style="background:none;border:1px solid #e9d5ff;color:#9ca3af;font-size:0.75rem;padding:4px 10px;border-radius:50px;cursor:pointer;font-family:inherit;">Clear</button>
+            <span class="saved-badge" id="savedCount">0 saved</span>
+          </div>
         </div>
         <div class="history-list" id="historyContainer">
           <p class="history-empty">No birthday masterpieces yet...</p>
@@ -494,7 +510,21 @@
     "You're aging like fine wine... slightly expensive and confusing."
   ];
 
-  var history = [];
+  // Load history from localStorage so it persists across reloads and sessions
+  function loadHistory() {
+    try {
+      var stored = localStorage.getItem("bdayCardHistory");
+      return stored ? JSON.parse(stored) : [];
+    } catch(e) { return []; }
+  }
+
+  function saveHistory(hist) {
+    try {
+      localStorage.setItem("bdayCardHistory", JSON.stringify(hist));
+    } catch(e) { /* storage unavailable, silently continue */ }
+  }
+
+  var history = loadHistory();
 
   function rand(arr) {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -514,6 +544,7 @@
     document.getElementById("cardMessage").textContent = message;
 
     history.unshift({ name: name, age: age, message: message });
+    saveHistory(history);
     updateHistory();
   }
 
@@ -591,7 +622,17 @@
     });
   }
 
-  function escapeHtml(str) {
+  function clearHistory() {
+    if (history.length === 0) return;
+    if (confirm("Clear all saved cards?")) {
+      history = [];
+      saveHistory(history);
+      updateHistory();
+    }
+  }
+
+  // Render any previously saved cards on page load
+  updateHistory();
     return String(str)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
