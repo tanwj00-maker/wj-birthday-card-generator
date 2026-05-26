@@ -25,7 +25,6 @@
       -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ⭐ FLOATING STARS */
     .star {
       position: fixed;
       width: 6px;
@@ -44,7 +43,6 @@
       100% { transform: translateY(-40px); opacity: 0.2; }
     }
 
-    /* 🌠 SHOOTING STARS */
     .shooting-star {
       position: fixed;
       width: 240px;
@@ -128,7 +126,7 @@
 
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
 
-    <!-- LEFT SIDE (RESTORED INPUTS) -->
+    <!-- LEFT SIDE -->
     <div class="bg-white/80 backdrop-blur rounded-3xl shadow-2xl p-8 border-4 border-purple-300">
 
       <h2 class="text-2xl font-extrabold text-purple-600 mb-6 tracking-tight">
@@ -167,15 +165,13 @@
 
         <div class="absolute inset-0 bg-indigo-300 rounded-3xl shadow-2xl rotate-[-2deg]"></div>
 
-        <div class="absolute inset-3 bg-white rounded-3xl shadow-inner flex overflow-hidden">
+        <div class="absolute inset-3 bg-white rounded-3xl shadow-inner flex overflow-hidden" style="background-color: #ffffff;">
 
           <!-- LEFT PAGE -->
-          <div class="w-1/2 bg-gradient-to-b from-blue-100 to-green-100 border-r flex items-center justify-center p-6">
+          <div class="w-1/2 bg-gradient-to-b from-blue-200 to-green-200 border-r flex items-center justify-center p-6">
 
             <div class="text-center">
-              <!-- RESTORED CAKE EMOJI -->
               <div class="text-5xl mb-4">🎂</div>
-
               <h3 class="text-2xl font-extrabold text-indigo-600">
                 Happy Birthday!
               </h3>
@@ -184,7 +180,7 @@
           </div>
 
           <!-- RIGHT PAGE -->
-          <div class="w-1/2 p-6 flex items-center justify-center">
+          <div class="w-1/2 p-6 flex items-center justify-center" style="background-color: #ffffff;">
             <p id="cardMessage"
               class="text-gray-600 text-lg italic text-center"
               style="font-family: 'Poppins', sans-serif;">
@@ -195,7 +191,7 @@
         </div>
       </div>
 
-      <!-- HISTORY (RESTORED) -->
+      <!-- HISTORY -->
       <div class="bg-white/80 backdrop-blur rounded-3xl shadow-xl p-6 border border-purple-200">
 
         <div class="flex items-center justify-between mb-4">
@@ -222,10 +218,17 @@
 
 <script>
   const openers = ["Congratulations!", "Breaking News!", "Alert 🚨", "Scientific discovery:", "Official announcement:"];
-  const jokes = ["you’re now old enough to complain about the weather unironically.", "your back now makes more sounds than your Spotify playlist.", "your candles cost more than the cake.", "you’ve officially entered the ‘make weird noises when standing up’ era.", "your metabolism has left the group chat.", "you’re basically a vintage collectible now.", "you now understand why people get excited over air fryers.", "your knees have started sending warning notifications."];
-  const extras = ["Still younger than a dinosaur though 🦖", "At least you still know your passwords... probably.", "Remember: wrinkles are just laugh receipts.", "Don’t worry, cake calories disappear on birthdays.", "Time to pretend you enjoy gardening and herbal tea.", "You’re aging like fine wine... slightly expensive and confusing."];
+  const jokes = ["you're now old enough to complain about the weather unironically.", "your back now makes more sounds than your Spotify playlist.", "your candles cost more than the cake.", "you've officially entered the 'make weird noises when standing up' era.", "your metabolism has left the group chat.", "you're basically a vintage collectible now.", "you now understand why people get excited over air fryers.", "your knees have started sending warning notifications."];
+  const extras = ["Still younger than a dinosaur though 🦖", "At least you still know your passwords... probably.", "Remember: wrinkles are just laugh receipts.", "Don't worry, cake calories disappear on birthdays.", "Time to pretend you enjoy gardening and herbal tea.", "You're aging like fine wine... slightly expensive and confusing."];
 
-  let history = [];
+  // Load from localStorage on startup
+  let history = (function() {
+    try { return JSON.parse(localStorage.getItem("bdayHistory") || "[]"); }
+    catch(e) { return []; }
+  })();
+
+  // Render saved history on page load
+  updateHistory();
 
   function generateMessage() {
     const name = document.getElementById("nameInput").value;
@@ -242,13 +245,16 @@
     document.getElementById("cardMessage").innerHTML = message;
 
     history.unshift({ name, age, message });
+    try { localStorage.setItem("bdayHistory", JSON.stringify(history)); } catch(e) {}
     updateHistory();
   }
 
   function downloadCard() {
     html2canvas(document.getElementById("birthdayCard"), {
-      backgroundColor: null,
-      scale: 2
+      backgroundColor: "#ffffff",
+      scale: 2,
+      useCORS: true,
+      allowTaint: false
     }).then(canvas => {
       const link = document.createElement("a");
       link.download = "birthday-card.jpg";
@@ -262,25 +268,23 @@
     const count = document.getElementById("savedCount");
 
     count.innerText = `${history.length} saved`;
-
     container.innerHTML = "";
+
+    if (history.length === 0) {
+      container.innerHTML = '<p class="text-gray-400 italic text-center py-6">No birthday masterpieces yet...</p>';
+      return;
+    }
 
     history.forEach(card => {
       const div = document.createElement("div");
-
-      div.className =
-        "bg-gradient-to-r from-yellow-100 to-pink-100 rounded-2xl p-4 border border-pink-200";
-
+      div.className = "bg-gradient-to-r from-yellow-100 to-pink-100 rounded-2xl p-4 border border-pink-200";
       div.innerHTML = `
         <div class="flex justify-between mb-2">
           <div class="font-semibold text-pink-600">${card.name} • ${card.age}</div>
           <div>🎉</div>
         </div>
-        <div class="text-gray-700 text-sm leading-relaxed">
-          ${card.message}
-        </div>
+        <div class="text-gray-700 text-sm leading-relaxed">${card.message}</div>
       `;
-
       container.appendChild(div);
     });
   }
